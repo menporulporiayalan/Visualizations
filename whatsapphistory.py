@@ -65,17 +65,17 @@ def get_texts_per_day(f):
             day = date_time_obj.date()
 
             # sort the text by whether it was sent from M or N
-            if (text[text.find("-")+2:text.find("-")+3] == "M"):
-                if (day, "M") in texts_per_day:
-                    texts_per_day[(day, "M")][1] += 1
+            if (text[text.find("-")+2:text.find("-")+3] == "E"):
+                if (day, "E") in texts_per_day:
+                    texts_per_day[(day, "E")][1] += 1
                 else:
-                    texts_per_day[(day, "M")] = [day, 1 , "M"]
+                    texts_per_day[(day, "E")] = [day, 1 , "E"]
 
-            elif (text[text.find("-")+2:text.find("-")+3] == "N"):
-                if (day, "N") in texts_per_day:
-                    texts_per_day[(day, "N")][1] += 1
+            elif (text[text.find("-")+2:text.find("-")+3] == "L"):
+                if (day, "L") in texts_per_day:
+                    texts_per_day[(day, "L")][1] += 1
                 else:
-                    texts_per_day[(day, "N")] = [day, 1 , "N"]
+                    texts_per_day[(day, "L")] = [day, 1 , "L"]
 
     df = pd.DataFrame.from_dict(texts_per_day, orient='index', columns = ['Date', 'Number of Texts', 'Person'])
     return df
@@ -97,10 +97,10 @@ def calc_num_words():
     for text in f:
         text = text[text.find("-")+2:len(text)-1]
         if (len(text) > 0):
-            if (text[0] == "M"):
+            if (text[0] == "E"):
                 text = text[text.find(":")+1:len(text)-1]
                 m_sumwords += len(text.split(" "))
-            if (text[0] == "N"):
+            if (text[0] == "L"):
                 text = text[text.find(":")+1:len(text)-1]
                 n_sumwords += len(text.split(" "))
 
@@ -121,12 +121,12 @@ def calc_avg_text_len():
 
         if (len(text) > 0):
 
-            if (text[0] == "M"):
+            if (text[0] == "E"):
                 m_total_texts += 1
                 text = text[text.find(":")+1:len(text)-1]
                 m_sum_len += len(text.split(" "))
 
-            if (text[0] == "N"):
+            if (text[0] == "L"):
                 n_total_texts += 1
                 text = text[text.find(":")+1:len(text)-1]
                 n_sum_len += len(text.split(" "))
@@ -185,8 +185,8 @@ def calc_avg_texts_per_hour():
             # add to our subtotals for each party
             text = text[text.find("-")+2:len(text)-1]
             if (len(text) > 0):
-                if (text[0] == "M"): m_times[time] += 1
-                elif (text[0] == "N"): n_times[time] += 1
+                if (text[0] == "E"): m_times[time] += 1
+                elif (text[0] == "L"): n_times[time] += 1
 
     # restructure data for the mixed_df (showing both parties on the radar chart)
     data = {'r' : [], 'theta' : [], 'person' : []}
@@ -194,11 +194,11 @@ def calc_avg_texts_per_hour():
     for time in m_times:
         data['r'].append(m_times[time])
         data['theta'].append(str(time)+":00")
-        data['person'].append("M")
+        data['person'].append("E")
     for time in n_times:
         data['r'].append(n_times[time])
         data['theta'].append(str(time)+":00")
-        data['person'].append("N")
+        data['person'].append("L")
 
     total_df = pd.DataFrame(dict(r=[times[x] for x in times], theta=[str(x)+":00" for x in range(24)]))
     mixed_df = pd.DataFrame.from_dict(data)
@@ -218,18 +218,15 @@ def who_texts_first():
 
     # this represents the oldest possible date
     last_date = datetime.date(datetime.MINYEAR, 1, 1)
-
     for text in f:
 
         # grab the date-time string
         dtstr = text[0: text.find("-")-1]
-
-        # if it matches the expected format (m/d/y, t:tt AM/PM)
-        if (re.match("\d{1,2}\/\d{1,2}\/\d{2}, \d{1,2}:\d{2} [AP]M", dtstr)):
+        # if it matches the expected format (m/d/y, t:tt AM/PM))
+        if (re.match("\d{1,2}\/\d{1,2}\/\d{2}, \d{1,2}:\d{2} [ap]m", dtstr)):
             
             # parse it into a datetime object
-            date = datetime.datetime.strptime(dtstr, "%m/%d/%y, %I:%M %p").date()
-
+            date = datetime.datetime.strptime(dtstr, "%d/%m/%y, %I:%M %p").date()
             # if the date is more recent than our last found date, we can conclude that it's a new day
             if (date > last_date):
                 total += 1
@@ -238,9 +235,10 @@ def who_texts_first():
                 # check who sent the first text and add to our running subtotals
                 text = text[text.find("-")+2:len(text)-1]
                 if (len(text) > 0):
-                    if (text[0] == "M"): m_texted_first += 1
-                    elif (text[0] == "N"): n_texted_first += 1
+                    if (text[0] == "E"): m_texted_first += 1
+                    elif (text[0] == "L"): n_texted_first += 1
     f.close()
+
     return(m_texted_first/total, n_texted_first/total)
 
 # Determines the rarest word each person uses (by inherent word rarity, not frequency used in this conversation)
@@ -259,10 +257,10 @@ def rarest_word():
                 freq = wordfreq.zipf_frequency(word, 'en')
                 text = text[text.find("-")+2:len(text)-1]
                 if (len(text) > 0):
-                    if (text[0] == "M" and freq < lowest_freq_m[0]):
+                    if (text[0] == "E" and freq < lowest_freq_m[0]):
                         lowest_freq_m[0] = freq
                         lowest_freq_m[1] = word
-                    elif (text[0] == "N" and freq < lowest_freq_n[0]):
+                    elif (text[0] == "L" and freq < lowest_freq_n[0]):
                         lowest_freq_n[0] = freq
                         lowest_freq_n[1] = word
                     
@@ -285,10 +283,10 @@ def first_text_freq():
         dtstr = text[0: text.find("-")-1]
 
         # if it matches the expected format (m/d/y, t:tt AM/PM)
-        if (re.match("\d{1,2}\/\d{1,2}\/\d{2}, \d{1,2}:\d{2} [AP]M", dtstr)):
+        if (re.match("\d{1,2}\/\d{1,2}\/\d{2}, \d{1,2}:\d{2} [ap]m", dtstr)):
             
             # parse it into a datetime object
-            date = datetime.datetime.strptime(dtstr, "%m/%d/%y, %I:%M %p").date()
+            date = datetime.datetime.strptime(dtstr, "%d/%m/%y, %I:%M %p").date()
 
             # if the date is more recent than our last found date, we can conclude that it's a new day
             if (date > last_date):
@@ -299,12 +297,12 @@ def first_text_freq():
                 first_word = text[text.find(":")+2:len(text)-1].split(" ")[0].translate(str.maketrans('', '', string.punctuation))
                 if (len(text) > 0 and len(first_word) > 0 and 
                 first_word != "Media" and first_word != "I" and first_word != "I'm" and first_word != "Im"):
-                    if (text[0] == "M"):
+                    if (text[0] == "E"):
                         if (first_word in m_texted_first):
                             m_texted_first[first_word] += 1
                         else:
                             m_texted_first[first_word] = 1
-                    elif (text[0] == "N"):
+                    elif (text[0] == "L"):
                         if (first_word in n_texted_first):
                             n_texted_first[first_word] += 1
                         else:
