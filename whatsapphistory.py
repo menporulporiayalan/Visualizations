@@ -25,15 +25,15 @@ file_name = "whatsapp.txt"
 
 def main():
     ### GROUP 1: outputs svgs to ./whatsappimages ###
-    #calc_freq_over_time()
-    #calc_avg_texts_per_hour()
+    calc_freq_over_time()
+    calc_avg_texts_per_hour()
 
     ### GROUP 2: outputs command line analysis ###
     m_words, n_words = calc_num_words()
-    print("Number of words sent: M - %d. N - %d" % (m_words, n_words))
+    print("Number of words sent: Me - %d. She - %d" % (m_words, n_words))
 
     m_avg, n_avg = calc_avg_text_len()
-    print("Average num of words per text: M - %.2f. N - %.2f" % (m_avg, n_avg))
+    print("Average num of words per text: Me - %.2f. She - %.2f" % (m_avg, n_avg))
 
     emoji, num_times_used = most_used_emoji()
     print("Most used emoji: %c, used %d times" % (emoji, num_times_used))
@@ -58,10 +58,10 @@ def get_texts_per_day(f):
         dtstr = text[0: text.find("-")-1]
 
         # if it matches the expected format (m/d/y, t:tt AM/PM)
-        if (re.match("\d{1,2}\/\d{1,2}\/\d{2}, \d{1,2}:\d{2} [AP]M", dtstr)):
+        if (re.match("\d{1,2}\/\d{1,2}\/\d{2}, \d{1,2}:\d{2} [ap]m", dtstr)):
             
             # parse it into a datetime object
-            date_time_obj = datetime.datetime.strptime(dtstr, "%m/%d/%y, %I:%M %p")
+            date_time_obj = datetime.datetime.strptime(dtstr, "%d/%m/%y, %I:%M %p")
             day = date_time_obj.date()
 
             # sort the text by whether it was sent from M or N
@@ -86,8 +86,8 @@ def calc_freq_over_time():
     df = get_texts_per_day(f)
     f.close()
     fig = px.line(df, x="Date", y="Number of Texts", title='Frequency of Text Messages', color='Person')
+    fig.show()
     fig.write_image("whatsappimages/frequencybyday.svg")
-
 # Calculates the number of words each party sent over the entire time period
 def calc_num_words():
     f = open(file_name, "r", encoding='utf-8')
@@ -174,10 +174,10 @@ def calc_avg_texts_per_hour():
         dtstr = text[0: text.find("-")-1]
 
         # if it matches the expected format (m/d/y, t:tt AM/PM)
-        if (re.match("\d{1,2}\/\d{1,2}\/\d{2}, \d{1,2}:\d{2} [AP]M", dtstr)):
+        if (re.match("\d{1,2}\/\d{1,2}\/\d{2}, \d{1,2}:\d{2} [ap]m", dtstr)):
             
             # parse it into a datetime object
-            time = datetime.datetime.strptime(dtstr, "%m/%d/%y, %I:%M %p").time().hour
+            time = datetime.datetime.strptime(dtstr, "%d/%m/%y, %I:%M %p").time().hour
 
             # add to our overall total
             times[time] += 1
@@ -202,7 +202,6 @@ def calc_avg_texts_per_hour():
 
     total_df = pd.DataFrame(dict(r=[times[x] for x in times], theta=[str(x)+":00" for x in range(24)]))
     mixed_df = pd.DataFrame.from_dict(data)
-
     # swap out mixed_df for total_df to see the combined texts radar chart
     fig = px.line_polar(mixed_df, r='r', theta='theta', color='person', line_close=True)
     fig.write_image("whatsappimages/hourlytextsboth.svg")
